@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "krunbox"
+version = "2.0.0"
+description = "Podman & microVM Sandboxing Engine with GTK4 Console"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "rich>=13.0.0",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Environment :: X11 Applications :: GTK",
+]
+
+[project.urls]
+Homepage = "https://github.com/krunbox/krunbox"
+Documentation = "https://github.com/krunbox/krunbox#readme"
+Repository = "https://github.com/krunbox/krunbox.git"
+Issues = "https://github.com/krunbox/krunbox/issues"
+
+[project.scripts]
+krunbox = "krunbox.cli.main:main"
+krunbox-ui = "krunbox.ui.app:run_app"
+
+[tool.setuptools.packages.find]
+include = ["krunbox*"]
+
+[tool.setuptools.package-data]
+krunbox = [
+    "data/*.desktop",
+    "data/*.xml",
+    "data/*.bash-completion",
+    "data/icons/*.svg",
+    "data/icons/*/*.png",
+]

@@ -1,0 +1,66 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing & code coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Type checking & linting
+.mypy_cache/
+.ruff_cache/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# GTK and FreeDesktop caches
+*.cache
+icon-theme.cache
+
+# Editor & IDE configurations
+.idea/
+*.swp
+*.swo
+*~
+
+# AI agent & sandbox runtime artifacts
+.agents/
+.antigravity/
+.gemini/
+.system_generated/
+
+# Local runtime logs and sockets
+*.log
+*.sock
+*.pid
+git-graph.html
+
+# Local runner scripts and development wrappers (untracked)
+bin/
+run.sh
+install-fedora.sh
+
+# Docusaurus website build & node dependencies
+node_modules/
+.docusaurus/
+website/node_modules/
+website/.docusaurus/
+website/build/
