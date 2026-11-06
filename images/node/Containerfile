@@ -1,0 +1,22 @@
+# krunbox-node -- Lightweight Fullstack Node.js MicroVM Image
+# Based on localhost/krunbox-base:latest (Debian Bookworm + OpenSSH + non-root vscode)
+
+FROM localhost/krunbox-base:latest
+
+ARG USERNAME=vscode
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 1. Install Node.js 22 LTS and npm
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        curl gnupg git \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && npm install -g pnpm yarn \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /root/.npm
+
+USER root
+WORKDIR /workspace
+
+# Retain base entrypoint for OpenSSH server initialization on port 2222
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/bin/bash"]

@@ -1,0 +1,196 @@
+# agent-box -- safe sandbox for AI coding agents
+#
+# Ubuntu 24.04 base (mcr.microsoft.com/devcontainers/base: git, zsh, common
+# dev tools, non-root "vscode" user uid 1000 with passwordless sudo).
+# + Mistral Vibe CLI   (binary: vibe)  https://mistral.ai/products/vibe/code/
+# + Google Antigravity CLI (binary: agy)  https://antigravity.google/product/antigravity-cli/
+# + Docker Engine -- dockerd runs INSIDE the krun microVM, so agents can
+#   spawn their own containers (postgres, redis, integration tests, ...)
+#   without any risk to the host.
+#
+# Build:  podman build -t agent-box .
+# Run:    krunbox run .   (podman --runtime=krun, microVM isolation)
+#
+# Intended runtime is crun-krun: the guest has its own kernel, so nested
+# containers cannot touch the host; --userns=keep-id keeps files the agents
+# write in /workspace owned by your host user.
+
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+
+ARG USERNAME=vscode
+ARG USER_HOME=/home/vscode
+
+# Guard against older tags of this image where an extra 'ubuntu' user
+# occupies uid 1000 (vscode must be uid 1000 for --userns=keep-id).
+RUN userdel -r ubuntu 2>/dev/null || true
+
+# ---------------------------------------------------------------------------
+# Docker Engine + bits the agent CLIs and dockerd need
+# ---------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl gnupg lsb-release \
+        gosu \
+        iptables nftables iproute2 \
+        python3 python3-pip python3-venv \
+        vim tmux \
+        ripgrep fd-find fzf bat \
+        sqlite3 \
+    && ln -s "$(command -v fdfind)" /usr/local/bin/fd \
+    && ln -s "$(command -v batcat)" /usr/local/bin/bat \
+    && install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+        > /etc/apt/sources.list.d/docker.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# The agent user may talk to the inner dockerd without sudo.
+RUN usermod -aG docker ${USERNAME}
+
+# ---------------------------------------------------------------------------
+# Node.js 22 LTS (NodeSource) - many agent workflows need npm/npx tooling
+# ---------------------------------------------------------------------------
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------------------------------------------------------
+# Google Chrome - powers agy's built-in browser subagent (/browser) via CDP
+# and Playwright/Puppeteer scripted tests (use channel: "chrome"). Ubuntu's
+# chromium-browser package is a snap stub and does not work in containers.
+# ---------------------------------------------------------------------------
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub -o /etc/apt/keyrings/google.asc \
+    && chmod a+r /etc/apt/keyrings/google.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/google.asc] https://dl.google.com/linux/chrome/deb/ stable main" \
+        > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends google-chrome-stable \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV CHROME_PATH=/usr/bin/google-chrome-stable
+
+# ---------------------------------------------------------------------------
+# Python data / testing / browser-automation stack in /opt/venv (the local
+# equivalent of pandastack's code-interpreter + browser templates). Baked so
+# agents don't re-install it on every ephemeral session; VIRTUAL_ENV + PATH
+# make `python`/`pip` point at it, which also sidesteps Ubuntu's PEP 668
+# externally-managed-environment block. Playwright uses the system Chrome via
+# channel="chrome" - no browser download needed.
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && /opt/venv/bin/pip install --no-cache-dir \
+        pandas numpy scipy scikit-learn matplotlib \
+        jupyter pytest playwright requests rich \
+    && npm install -g playwright \
+    && rm -rf /root/.npm
+
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+# Lets `pip3 install` into the system interpreter too (fine in a throwaway VM).
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+# ---------------------------------------------------------------------------
+# uv (used to install and later upgrade mistral-vibe)
+# ---------------------------------------------------------------------------
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+
+# ---------------------------------------------------------------------------
+# Agent CLIs -- installed as the user that will run them, so their config,
+# credentials and update checks live in /home/vscode (persisted via volumes).
+# ---------------------------------------------------------------------------
+USER ${USERNAME}
+ENV PATH="${USER_HOME}/.local/bin:${PATH}"
+
+# Mistral Vibe CLI (https://github.com/mistralai/mistral-vibe)
+# uv provisions its own Python 3.12+; binary lands in ~/.local/bin/vibe
+RUN uv tool install --python 3.12 mistral-vibe
+
+# Google Antigravity CLI (binary: agy). Distributed only via the official
+# install script (no npm/brew). First run of `agy` walks you through Google
+# SSO login interactively (it prints a URL + one-time code); the token is
+# cached in ~/.gemini/antigravity-cli/ (agy detects container environments
+# and uses file-based storage), persisted by named volumes in krunbox.
+RUN curl -fsSL https://antigravity.google/cli/install.sh | bash
+
+# Default agy settings: never ask for permission. The whole container is a
+# throwaway microVM sandbox, so auto-proceeding is the intended usage.
+# (Settings equivalent of `agy --dangerously-skip-permissions`.)
+RUN mkdir -p ${USER_HOME}/.gemini/antigravity-cli \
+    && printf '%s\n' \
+    '{' \
+    '  "toolPermission": "always-proceed",' \
+    '  "agentMode": "accept-edits",' \
+    '  "artifactReviewPolicy": "always-proceed",' \
+    '  "trustedWorkspaces": ["/workspace"]' \
+    '}' > ${USER_HOME}/.gemini/antigravity-cli/settings.json \
+    && chmod 600 ${USER_HOME}/.gemini/antigravity-cli/settings.json
+
+# Global guidance + custom subagents, so the main agent actually delegates:
+#   ~/.gemini/AGENTS.md                -> when/when not to use subagents
+#   ~/.gemini/config/agents/*.md       -> researcher / implementer / tester / reviewer
+# (tool lists intentionally omitted: misspelled tool names can hang subagents)
+COPY --chown=${USERNAME}:${USERNAME} agents-config/AGENTS.md ${USER_HOME}/.gemini/AGENTS.md
+COPY --chown=${USERNAME}:${USERNAME} agents-config/agents/ ${USER_HOME}/.gemini/config/agents/
+
+# ---------------------------------------------------------------------------
+# OpenSSH Server for host access
+# ---------------------------------------------------------------------------
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends openssh-server \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd \
+    && mkdir -p /var/run/sshd /etc/ssh/sshd_config.d \
+    && printf '%s\n' \
+        'Port 2222' \
+        'PermitRootLogin no' \
+        'PasswordAuthentication no' \
+        'PubkeyAuthentication yes' \
+        'AuthorizedKeysFile .ssh/authorized_keys' \
+        'UseDNS no' \
+        'PrintMotd no' \
+        'AcceptEnv LANG LC_*' \
+        > /etc/ssh/sshd_config.d/agent-box.conf \
+    && printf '%s\n' \
+        'export PATH="/home/vscode/.local/bin:/opt/venv/bin:$PATH"' \
+        'export VIRTUAL_ENV=/opt/venv' \
+        'export PIP_BREAK_SYSTEM_PACKAGES=1' \
+        'export CHROME_PATH=/usr/bin/google-chrome-stable' \
+        'export DOCKER_HOST=unix:///var/run/docker.sock' \
+        > /etc/profile.d/agent-box.sh \
+    && chmod 0644 /etc/profile.d/agent-box.sh \
+    && printf '%s\n' \
+        'PATH="/home/vscode/.local/bin:/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' \
+        'DOCKER_HOST="unix:///var/run/docker.sock"' \
+        'CHROME_PATH="/usr/bin/google-chrome-stable"' \
+        'VIRTUAL_ENV="/opt/venv"' \
+        >> /etc/environment
+
+# ---------------------------------------------------------------------------
+# Boot logic
+# ---------------------------------------------------------------------------
+USER root
+WORKDIR /workspace
+RUN mkdir -p /workspace && chown ${USERNAME}:${USERNAME} /workspace \
+    && chmod 0755 ${USER_HOME}/.local/bin || true
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY agent-session.sh /usr/local/bin/agent-session.sh
+RUN chmod 0755 /usr/local/bin/entrypoint.sh /usr/local/bin/agent-session.sh \
+    && mkdir -p /etc/docker \
+    # The krun guest kernel ships no xtables support, so dockerd must not
+    # use iptables. entrypoint.sh installs the NAT rules via nftables
+    # (which the guest kernel does support) instead.
+    && printf '%s\n' '{' '  "iptables": false,' '  "ip-forward": true,' '  "userland-proxy": true' '}' \
+        > /etc/docker/daemon.json
+
+ENV DOCKER_HOST=unix:///var/run/docker.sock
+
+# entrypoint.sh (root): mounts cgroup2 if needed, starts dockerd, then
+# drops to the vscode user via agent-session.sh (session dbus + keyring),
+# which execs CMD or any command you pass after the image name.
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/bin/bash"]

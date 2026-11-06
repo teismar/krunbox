@@ -1,0 +1,61 @@
+# krunbox-base -- Lightweight Debian Bookworm MicroVM Base Image
+#
+# Provides:
+# - Minimal Debian Bookworm core
+# - Non-root vscode user (UID 1000) with passwordless sudo
+# - Pre-installed and PAM-patched OpenSSH Server on guest port 2222
+# - In-guest nftables/iptables networking and egress enforcement support
+# - MicroVM keepalive and privilege dropping entrypoint
+
+FROM docker.io/library/debian:bookworm-slim
+
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# 1. Create vscode user (UID/GID 1000 for podman --userns=keep-id compatibility)
+RUN groupadd --gid ${USER_GID} ${USERNAME} \
+    && useradd --uid ${USER_UID} --gid ${USER_GID} -m -s /bin/bash ${USERNAME}
+
+# 2. Install essential utilities and OpenSSH server
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl gnupg \
+        gosu sudo \
+        iptables nftables iproute2 procps python3 \
+        openssh-server \
+        vim-tiny \
+    # Passwordless sudo for vscode user \
+    && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/99-vscode \
+    && chmod 0440 /etc/sudoers.d/99-vscode \
+    # Fix PAM loginuid: containers and microVMs lack audit session support, causing ssh disconnects \
+    && sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd \
+    # SSH daemon configuration \
+    && mkdir -p /var/run/sshd /etc/ssh/sshd_config.d /workspace \
+    && printf '%s\n' \
+        'Port 2222' \
+        'PermitRootLogin no' \
+        'PasswordAuthentication no' \
+        'PubkeyAuthentication yes' \
+        'AuthorizedKeysFile .ssh/authorized_keys' \
+        'UseDNS no' \
+        'PrintMotd no' \
+        'AcceptEnv LANG LC_*' \
+        > /etc/ssh/sshd_config.d/krunbox.conf \
+    # Pre-generate SSH host keys during image build \
+    && ssh-keygen -A \
+    && chown -R ${USERNAME}:${USERNAME} /workspace \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 3. MicroVM boot entrypoint
+USER root
+WORKDIR /workspace
+
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod 0755 /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/bin/bash"]

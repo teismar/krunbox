@@ -1,0 +1,222 @@
+# krunbox-reversing -- Reversing & Binary Analysis MicroVM Image
+# Based on localhost/krunbox-base:latest (Debian Bookworm + OpenSSH + non-root vscode)
+#
+# Provides:
+# - storytold/craft-anything: Clean-room software reverse engineering & reconstruction engine (GUI & CLI)
+# - morluto/rea: Reverse Engineer Anything (MCP server & 'rea' binary CLI)
+# - bethington/ghidra-mcp: Ghidra MCP Server & Bridge (219 reverse engineering tools for AI agents)
+# - NSA Ghidra SRE framework (decompiler, disassembly, headless analyzer)
+# - Reverse engineering & binary analysis toolchain:
+#   * Compilers & Debuggers: gcc, g++, gdb, binutils (objdump, readelf, nm, strings, strip, c++filt)
+#   * Dynamic tracers & inspection: strace, ltrace, file, xxd, hexedit, patchelf, elfutils, wabt, sqlite3
+#   * Rizin static binary analysis toolkit (rz-bin, rizin)
+#   * OpenJDK 17 JDK (required for Ghidra, JADX, and Java bytecode analysis)
+#   * Node.js 22 LTS & npm for rea-agents MCP & tools
+#   * Python 3 venv with pwntools, pefile, capstone, ropper, and ghidra-mcp-bridge
+#   * Desktop & graphics libraries for craft-anything and Ghidra GUI
+
+FROM localhost/krunbox-base:latest
+
+ARG USERNAME=vscode
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 1. Essential build, reversing, inspection tools and GUI libraries for craft-anything and Ghidra
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        gdb \
+        binutils \
+        strace \
+        ltrace \
+        patchelf \
+        elfutils \
+        file \
+        xxd \
+        hexedit \
+        wabt \
+        sqlite3 \
+        ripgrep \
+        jq \
+        curl \
+        wget \
+        git \
+        unzip \
+        tar \
+        xz-utils \
+        p7zip-full \
+        procps \
+        openjdk-17-jdk \
+        python3 \
+        python3-pip \
+        python3-venv \
+        python3-dev \
+        # Graphical and rendering libraries for craft-anything and Ghidra
+        libxkbcommon0 \
+        libxkbcommon-x11-0 \
+        libwayland-client0 \
+        libx11-6 \
+        libx11-xcb1 \
+        libxcb1 \
+        libxcursor1 \
+        libxi6 \
+        libxrender1 \
+        libxtst6 \
+        libvulkan1 \
+        libegl1 \
+        libgl1-mesa-dri \
+        libgtk-3-0 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 2. Install Node.js 22 LTS and npm for morluto/rea (rea-agents)
+RUN (curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && npm install -g --omit=dev rea-agents) || true \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /root/.npm
+
+# 3. Install storytold/craft-anything (desktop app and CLI)
+ARG CRAFT_ANYTHING_VERSION=0.6.0
+RUN ARCH=$(uname -m) \
+    && if [ "$ARCH" = "x86_64" ]; then \
+           CRAFT_ARCH="linux-x86_64"; \
+       elif [ "$ARCH" = "aarch64" ]; then \
+           CRAFT_ARCH="linux-aarch64"; \
+       else \
+           CRAFT_ARCH="linux-x86_64"; \
+       fi \
+    && ( \
+        curl -fsSL "https://github.com/storytold/craft-anything/releases/download/v${CRAFT_ANYTHING_VERSION}/craft-anything-${CRAFT_ANYTHING_VERSION}-${CRAFT_ARCH}.deb" -o /tmp/craft-anything.deb \
+        && dpkg -i /tmp/craft-anything.deb \
+        && rm -f /tmp/craft-anything.deb \
+    ) || ( \
+        curl -fsSL "https://github.com/storytold/craft-anything/releases/download/v${CRAFT_ANYTHING_VERSION}/craft-anything-${CRAFT_ANYTHING_VERSION}-${CRAFT_ARCH}.tar.gz" -o /tmp/craft-anything.tar.gz \
+        && tar -xzf /tmp/craft-anything.tar.gz -C /tmp/ \
+        && cp -r /tmp/craft-anything-${CRAFT_ANYTHING_VERSION}-${CRAFT_ARCH}/bin/* /usr/local/bin/ \
+        && cp -r /tmp/craft-anything-${CRAFT_ANYTHING_VERSION}-${CRAFT_ARCH}/share/* /usr/local/share/ 2>/dev/null || true \
+        && rm -rf /tmp/craft-anything* \
+    ) || true
+
+# 4. Install Rizin (reverse engineering framework supported by REA)
+ARG RIZIN_VERSION=0.9.1
+RUN ARCH=$(uname -m) \
+    && if [ "$ARCH" = "x86_64" ]; then \
+           (curl -fsSL "https://github.com/rizinorg/rizin/releases/download/v${RIZIN_VERSION}/rizin-v${RIZIN_VERSION}-static-x86_64.tar.xz" -o /tmp/rizin.tar.xz \
+           && tar -xf /tmp/rizin.tar.xz -C /usr/local --strip-components=1 \
+           && rm -f /tmp/rizin.tar.xz) || true; \
+       fi
+
+# 5. Install NSA Ghidra Software Reverse Engineering Framework
+# Used by storytold/craft-anything (Deep mode), morluto/rea, and bethington/ghidra-mcp
+ARG GHIDRA_VERSION=12.2
+ARG GHIDRA_DATE=20261016
+ENV GHIDRA_INSTALL_DIR=/opt/ghidra
+
+RUN ( \
+        curl -fsSL "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_${GHIDRA_VERSION}_build/ghidra_${GHIDRA_VERSION}_PUBLIC_${GHIDRA_DATE}.zip" -o /tmp/ghidra.zip \
+        && unzip -q /tmp/ghidra.zip -d /opt \
+        && mv /opt/ghidra_${GHIDRA_VERSION}_PUBLIC* /opt/ghidra \
+        && ln -sf /opt/ghidra/ghidraRun /usr/local/bin/ghidra \
+        && ln -sf /opt/ghidra/ghidraRun /usr/local/bin/ghidraRun \
+        && ln -sf /opt/ghidra/support/analyzeHeadless /usr/local/bin/analyzeHeadless \
+        && rm -f /tmp/ghidra.zip \
+    ) || true
+
+# Helper script to install or refresh Ghidra on demand
+RUN printf '%s\n' \
+    '#!/bin/bash' \
+    'set -e' \
+    'if [ -x /opt/ghidra/ghidraRun ]; then' \
+    '  echo "[krunbox] Ghidra is already installed at /opt/ghidra"' \
+    '  exit 0' \
+    'fi' \
+    'echo "[krunbox] Downloading Ghidra..."' \
+    'GHIDRA_VER="${GHIDRA_VERSION:-12.2}"' \
+    'GHIDRA_DT="${GHIDRA_DATE:-20261016}"' \
+    'curl -fsSL "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_${GHIDRA_VER}_build/ghidra_${GHIDRA_VER}_PUBLIC_${GHIDRA_DT}.zip" -o /tmp/ghidra.zip' \
+    'mkdir -p /opt' \
+    'unzip -q /tmp/ghidra.zip -d /opt' \
+    'mv /opt/ghidra_${GHIDRA_VER}_PUBLIC* /opt/ghidra' \
+    'ln -sf /opt/ghidra/ghidraRun /usr/local/bin/ghidra' \
+    'ln -sf /opt/ghidra/ghidraRun /usr/local/bin/ghidraRun' \
+    'ln -sf /opt/ghidra/support/analyzeHeadless /usr/local/bin/analyzeHeadless' \
+    'rm -f /tmp/ghidra.zip' \
+    'echo "[krunbox] Ghidra installed successfully at /opt/ghidra"' \
+    > /usr/local/bin/install-ghidra \
+    && chmod 0755 /usr/local/bin/install-ghidra
+
+# 6. Install Ghidra MCP Server extension & headless server (bethington/ghidra-mcp)
+ARG GHIDRA_MCP_VERSION=7.0.0
+RUN ( \
+        mkdir -p /opt/ghidra/Ghidra/Extensions \
+        && curl -fsSL "https://github.com/bethington/ghidra-mcp/releases/download/v${GHIDRA_MCP_VERSION}/GhidraMCP-${GHIDRA_MCP_VERSION}.zip" -o /tmp/GhidraMCP.zip \
+        && unzip -q /tmp/GhidraMCP.zip -d /opt/ghidra/Ghidra/Extensions \
+        && rm -f /tmp/GhidraMCP.zip \
+    ) || true
+
+# 7. Create persistent Python virtual environment with reversing packages and bridge-mcp-ghidra
+RUN python3 -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip \
+    && (/opt/venv/bin/pip install --no-cache-dir pwntools pefile capstone ropper || true) \
+    && ( \
+        curl -fsSL "https://github.com/bethington/ghidra-mcp/releases/download/v${GHIDRA_MCP_VERSION}/ghidra_mcp_bridge-${GHIDRA_MCP_VERSION}-py3-none-any.whl" -o /tmp/ghidra_mcp_bridge.whl \
+        && /opt/venv/bin/pip install --no-cache-dir /tmp/ghidra_mcp_bridge.whl \
+        && ln -sf /opt/venv/bin/bridge-mcp-ghidra /usr/local/bin/bridge-mcp-ghidra \
+        && rm -f /tmp/ghidra_mcp_bridge.whl \
+    ) || true \
+    && chown -R ${USERNAME}:${USERNAME} /opt/venv
+
+# 8. Add launcher scripts for Ghidra MCP headless server and bridge
+RUN printf '%s\n' \
+    '#!/bin/bash' \
+    '# Starts Ghidra MCP Headless Server (201 endpoints, no GUI required)' \
+    'set -e' \
+    'GHIDRA_DIR="${GHIDRA_INSTALL_DIR:-/opt/ghidra}"' \
+    'PORT="${1:-8089}"' \
+    'BIND="${2:-0.0.0.0}"' \
+    'EXT_JAR=$(find "$GHIDRA_DIR" /opt /home/vscode/.config/ghidra -name "GhidraMCP*.jar" 2>/dev/null | head -n 1)' \
+    'if [ -z "$EXT_JAR" ]; then' \
+    '  echo "Error: GhidraMCP extension JAR not found." >&2' \
+    '  exit 1' \
+    'fi' \
+    'CP="$EXT_JAR"' \
+    'for j in $(find "$GHIDRA_DIR/Ghidra" "$GHIDRA_DIR/Framework" -name "*.jar" 2>/dev/null); do' \
+    '  CP="$CP:$j"' \
+    'done' \
+    'echo "[krunbox] Starting Ghidra MCP Headless Server on $BIND:$PORT..."' \
+    'exec java -cp "$CP" com.xebyte.headless.GhidraMCPHeadlessServer --bind "$BIND" --port "$PORT"' \
+    > /usr/local/bin/start-ghidra-headless-mcp \
+    && chmod 0755 /usr/local/bin/start-ghidra-headless-mcp
+
+RUN printf '%s\n' \
+    '#!/bin/bash' \
+    '# Starts Python MCP bridge to communicate with Ghidra' \
+    'export GHIDRA_MCP_URL="${GHIDRA_MCP_URL:-http://127.0.0.1:8089}"' \
+    'exec /usr/local/bin/bridge-mcp-ghidra "$@"' \
+    > /usr/local/bin/start-ghidra-mcp \
+    && chmod 0755 /usr/local/bin/start-ghidra-mcp
+
+ENV VIRTUAL_ENV=/opt/venv
+ENV GHIDRA_INSTALL_DIR=/opt/ghidra
+ENV PATH="/opt/venv/bin:/opt/ghidra:/home/vscode/.local/bin:${PATH}"
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+
+# Configure environment for all login and non-login shells (including SSH remote commands)
+RUN printf '%s\n' \
+    'export VIRTUAL_ENV=/opt/venv' \
+    'export GHIDRA_INSTALL_DIR=/opt/ghidra' \
+    'export PATH="/opt/venv/bin:/opt/ghidra:/home/vscode/.local/bin:$PATH"' \
+    'export PIP_BREAK_SYSTEM_PACKAGES=1' \
+    > /etc/profile.d/krunbox-reversing.sh \
+    && chmod 0644 /etc/profile.d/krunbox-reversing.sh \
+    && printf '%s\n' \
+    'PATH="/opt/venv/bin:/opt/ghidra:/home/vscode/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' \
+    'VIRTUAL_ENV="/opt/venv"' \
+    'GHIDRA_INSTALL_DIR="/opt/ghidra"' \
+    >> /etc/environment \
+    && printf '\nexport PATH="/opt/venv/bin:/opt/ghidra:/home/vscode/.local/bin:$PATH"\nexport VIRTUAL_ENV=/opt/venv\nexport GHIDRA_INSTALL_DIR=/opt/ghidra\n' \
+    >> /etc/bash.bashrc
+
+USER root
+WORKDIR /workspace
+
+# Retain base entrypoint for OpenSSH server initialization on port 2222
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["/bin/bash"]
