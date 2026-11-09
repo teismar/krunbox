@@ -1,0 +1,63 @@
+# Bash completion for krunbox
+_krunbox_completions() {
+    local cur prev words cword
+    _init_completion || return
+
+    local commands="run create edit update config start stop pause unpause resume restart rm delete list ls ps ssh connect code exec diff changes rollback snapshot templates secret idle-check forward unforward ports network egress net traffic egress-stats open logs stats api-stats images doctor prune install-desktop requests approve deny keep-awake ui"
+
+    if [[ $cword -eq 1 ]]; then
+        COMPREPLY=( $(compgen -W "$commands" -- "$cur") )
+        return 0
+    fi
+
+    local cmd="${words[1]}"
+    case "$cmd" in
+        stop|start|pause|unpause|resume|restart|rm|delete|ssh|connect|code|ports|open|logs|forward|unforward|api-stats|edit|update|config|network|egress|net|traffic|egress-stats|diff|changes|rollback|snapshot|secret|keep-awake)
+            if [[ "$prev" == "--network" || "$prev" == "--net" || "$prev" == "--profile" ]]; then
+                COMPREPLY=( $(compgen -W "full ai-only dev-common offline custom" -- "$cur") )
+                return 0
+            elif [[ "$prev" == "--ide" ]]; then
+                COMPREPLY=( $(compgen -W "vscode cursor zed jetbrains sftp terminal" -- "$cur") )
+                return 0
+            elif [[ "$prev" == "--idle-action" ]]; then
+                COMPREPLY=( $(compgen -W "stop pause" -- "$cur") )
+                return 0
+            elif [[ "$prev" == "--budget-action" ]]; then
+                COMPREPLY=( $(compgen -W "alert pause stop" -- "$cur") )
+                return 0
+            fi
+            local sandboxes
+            if command -v krunbox >/dev/null 2>&1; then
+                sandboxes=$(krunbox list 2>/dev/null | awk 'NR>2 && $1 ~ /^krunbox-/ {print $1}')
+            fi
+            COMPREPLY=( $(compgen -W "$sandboxes" -- "$cur") )
+            return 0
+            ;;
+        templates)
+            COMPREPLY=( $(compgen -W "list save delete" -- "$cur") )
+            return 0
+            ;;
+        run|create)
+            if [[ "$prev" == "-p" || "$prev" == "--port" ]]; then
+                COMPREPLY=( $(compgen -W "3000:3000 5173:5173 8000:8000 8080:8080 8888:8888" -- "$cur") )
+                return 0
+            elif [[ "$prev" == "--network" || "$prev" == "--net" ]]; then
+                COMPREPLY=( $(compgen -W "full ai-only dev-common offline custom" -- "$cur") )
+                return 0
+            elif [[ "$prev" == "--template" || "$prev" == "-T" ]]; then
+                COMPREPLY=( $(compgen -W "standard-agent locked-down-reviewer ai-only-coder fullstack-web python-data-ml reversing reverse-engineering" -- "$cur") )
+                return 0
+            elif [[ "$prev" == "--idle-action" ]]; then
+                COMPREPLY=( $(compgen -W "stop pause" -- "$cur") )
+                return 0
+            elif [[ "$prev" == "-i" || "$prev" == "--image" ]]; then
+                COMPREPLY=( $(compgen -W "localhost/agent-box:latest ghcr.io/astral-sh/uv:python3.12-bookworm-slim docker.io/library/node:22-bookworm-slim docker.io/library/debian:bookworm-slim" -- "$cur") )
+                return 0
+            fi
+            _filedir -d
+            return 0
+            ;;
+    esac
+}
+
+complete -F _krunbox_completions krunbox
