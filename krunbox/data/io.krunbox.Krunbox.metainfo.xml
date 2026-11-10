@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.krunbox.Krunbox</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>krunbox</name>
+  <summary>Lightweight microVM sandboxing for AI agents and development</summary>
+  <description>
+    <p>
+      krunbox lets you run AI coding agents and messy code inside fast, hardware-isolated Linux microVMs. Built on crun-krun and Podman, it combines the speed of containers with real KVM kernel isolation, outbound network firewalls, and a clean native GTK4 / Libadwaita desktop interface.
+    </p>
+    <p>Highlights:</p>
+    <ul>
+      <li>Fast Linux microVMs powered by crun-krun, libkrun, and KVM hardware virtualization</li>
+      <li>Network egress lockdown: keep agents offline or limit them to AI endpoints and dev registries</li>
+      <li>Instant SSH terminal access and 1-click launch in VS Code, Cursor, Zed, or JetBrains</li>
+      <li>Git workspace guardrails to prevent rogue scripts from planting malicious git hooks</li>
+      <li>Interactive diff viewer and 1-click rollback to inspect what agents modified</li>
+      <li>Native GTK4 and Libadwaita desktop app that fits right into GNOME</li>
+    </ul>
+  </description>
+  <url type="homepage">https://github.com/teismar/krunbox</url>
+  <url type="bugtracker">https://github.com/teismar/krunbox/issues</url>
+  <developer id="io.krunbox">
+    <name>Krunbox Development Team</name>
+  </developer>
+  <launchable type="desktop-id">io.krunbox.Krunbox.desktop</launchable>
+  <icon type="stock">io.krunbox.Krunbox</icon>
+  <categories>
+    <category>Development</category>
+  </categories>
+  <keywords>
+    <keyword>podman</keyword>
+    <keyword>krun</keyword>
+    <keyword>microvm</keyword>
+    <keyword>sandbox</keyword>
+    <keyword>ai</keyword>
+    <keyword>virtualization</keyword>
+    <keyword>security</keyword>
+  </keywords>
+  <provides>
+    <binary>krunbox</binary>
+    <binary>krunbox-ui</binary>
+  </provides>
+  <screenshots>
+    <screenshot type="default">
+      <caption>krunbox native GTK4 and Libadwaita console</caption>
+      <image>https://krunbox.github.io/krunbox/img/screenshots/main-window.png</image>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="2.0.0" date="2026-11-08">
+      <description>
+        <p>Major 2.0 release featuring a native GTK4/Libadwaita console, microVM hardware isolation, egress monitoring, and 1-click IDE integration.</p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>

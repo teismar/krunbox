@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=krunbox
+GenericName=MicroVM Sandboxing Console
+Comment=Lightweight microVM sandbox for AI agents and development
+Exec=krunbox ui
+Icon=io.krunbox.Krunbox
+Terminal=false
+Type=Application
+Categories=Development;Building;
+Keywords=podman;krun;microvm;sandbox;ai;security;containers;virtualization;
+StartupNotify=true
+StartupWMClass=io.krunbox.Krunbox
