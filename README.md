@@ -103,7 +103,7 @@ flowchart TD
 
 | Image | Description | Typical Use Case |
 |---|---|---|
-| **`agent-box:latest`** | Ubuntu 24.04, nested Docker daemon, Node.js, Python, Chrome headless | Autonomous coding agents (Claude Code, OpenDevin, Aider) |
+| **`agent-box:latest`** | Debian Bookworm (on krunbox-base), nested Docker daemon, Node.js, Python, Chrome headless | Autonomous coding agents (Claude Code, OpenDevin, Aider) |
 | **`python-data`** | Python 3.12, `uv`, NumPy, pandas, PyTorch, Jupyter | Data science, machine learning, and script testing |
 | **`node-fullstack`** | Node.js 22 LTS, npm, pnpm, Playwright | Web development and frontend testing |
 | **`reversing`** | Ghidra, Rizin, GDB, Wabt, Patchelf, Python binary analysis | Safe binary analysis and reverse engineering |

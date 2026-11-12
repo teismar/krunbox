@@ -34,7 +34,7 @@ DEFAULT_SSH_PORT = 2222
 BUILTIN_IMAGES: Dict[str, dict] = {
     "agent-box": {
         "tag": "localhost/agent-box:latest",
-        "description": "Standard AI Agent (Ubuntu 24.04, DinD, Antigravity, Vibe, Chrome CDP)",
+        "description": "Standard AI Agent (Debian Bookworm, DinD, Antigravity, Vibe, Chrome CDP)",
         "default": True,
         "runtime": "krun",
         "containerfile": "images/agent-box/Containerfile",

@@ -1,46 +1,44 @@
 # agent-box -- safe sandbox for AI coding agents
 #
-# Ubuntu 24.04 base (mcr.microsoft.com/devcontainers/base: git, zsh, common
-# dev tools, non-root "vscode" user uid 1000 with passwordless sudo).
+# Built on krunbox-base (Debian Bookworm, vscode uid 1000 with passwordless
+# sudo, hardened OpenSSH on port 2222, nftables, gosu). Build it first:
+#   krunbox image build base      (or: podman build -t krunbox-base images/base)
+#
 # + Mistral Vibe CLI   (binary: vibe)  https://mistral.ai/products/vibe/code/
 # + Google Antigravity CLI (binary: agy)  https://antigravity.google/product/antigravity-cli/
 # + Docker Engine -- dockerd runs INSIDE the krun microVM, so agents can
 #   spawn their own containers (postgres, redis, integration tests, ...)
 #   without any risk to the host.
 #
-# Build:  podman build -t agent-box .
+# Build:  podman build -t agent-box images/agent-box
 # Run:    krunbox run .   (podman --runtime=krun, microVM isolation)
 #
 # Intended runtime is crun-krun: the guest has its own kernel, so nested
 # containers cannot touch the host; --userns=keep-id keeps files the agents
 # write in /workspace owned by your host user.
 
-FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
+FROM localhost/krunbox-base:latest
 
 ARG USERNAME=vscode
 ARG USER_HOME=/home/vscode
 
-# Guard against older tags of this image where an extra 'ubuntu' user
-# occupies uid 1000 (vscode must be uid 1000 for --userns=keep-id).
-RUN userdel -r ubuntu 2>/dev/null || true
+USER root
 
 # ---------------------------------------------------------------------------
 # Docker Engine + bits the agent CLIs and dockerd need
 # ---------------------------------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates curl gnupg lsb-release \
-        gosu \
-        iptables nftables iproute2 \
-        python3 python3-pip python3-venv \
+        git git-lfs less jq unzip zip zsh lsb-release \
+        python3-pip python3-venv \
         vim tmux \
         ripgrep fd-find fzf bat \
         sqlite3 \
     && ln -s "$(command -v fdfind)" /usr/local/bin/fd \
     && ln -s "$(command -v batcat)" /usr/local/bin/bat \
     && install -m 0755 -d /etc/apt/keyrings \
-    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
     && chmod a+r /etc/apt/keyrings/docker.asc \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
         > /etc/apt/sources.list.d/docker.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -59,8 +57,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 
 # ---------------------------------------------------------------------------
 # Google Chrome - powers agy's built-in browser subagent (/browser) via CDP
-# and Playwright/Puppeteer scripted tests (use channel: "chrome"). Ubuntu's
-# chromium-browser package is a snap stub and does not work in containers.
+# and Playwright/Puppeteer scripted tests (use channel: "chrome"). Debian's
+# chromium package is not tracked against Playwright's expectations.
 # ---------------------------------------------------------------------------
 RUN install -m 0755 -d /etc/apt/keyrings \
     && curl -fsSL https://dl-ssl.google.com/linux/linux_signing_key.pub -o /etc/apt/keyrings/google.asc \
@@ -77,7 +75,7 @@ ENV CHROME_PATH=/usr/bin/google-chrome-stable
 # Python data / testing / browser-automation stack in /opt/venv (the local
 # equivalent of pandastack's code-interpreter + browser templates). Baked so
 # agents don't re-install it on every ephemeral session; VIRTUAL_ENV + PATH
-# make `python`/`pip` point at it, which also sidesteps Ubuntu's PEP 668
+# make `python`/`pip` point at it, which also sidesteps Debian's PEP 668
 # externally-managed-environment block. Playwright uses the system Chrome via
 # channel="chrome" - no browser download needed.
 RUN python3 -m venv /opt/venv \
@@ -129,32 +127,11 @@ RUN mkdir -p ${USER_HOME}/.gemini/antigravity-cli \
     '}' > ${USER_HOME}/.gemini/antigravity-cli/settings.json \
     && chmod 600 ${USER_HOME}/.gemini/antigravity-cli/settings.json
 
-# Global guidance + custom subagents, so the main agent actually delegates:
-#   ~/.gemini/AGENTS.md                -> when/when not to use subagents
-#   ~/.gemini/config/agents/*.md       -> researcher / implementer / tester / reviewer
-# (tool lists intentionally omitted: misspelled tool names can hang subagents)
-COPY --chown=${USERNAME}:${USERNAME} agents-config/AGENTS.md ${USER_HOME}/.gemini/AGENTS.md
-COPY --chown=${USERNAME}:${USERNAME} agents-config/agents/ ${USER_HOME}/.gemini/config/agents/
-
 # ---------------------------------------------------------------------------
-# OpenSSH Server for host access
+# Login environment (sshd itself comes from krunbox-base)
 # ---------------------------------------------------------------------------
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends openssh-server \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && sed -i 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' /etc/pam.d/sshd \
-    && mkdir -p /var/run/sshd /etc/ssh/sshd_config.d \
-    && printf '%s\n' \
-        'Port 2222' \
-        'PermitRootLogin no' \
-        'PasswordAuthentication no' \
-        'PubkeyAuthentication yes' \
-        'AuthorizedKeysFile .ssh/authorized_keys' \
-        'UseDNS no' \
-        'PrintMotd no' \
-        'AcceptEnv LANG LC_*' \
-        > /etc/ssh/sshd_config.d/agent-box.conf \
-    && printf '%s\n' \
+RUN printf '%s\n' \
         'export PATH="/home/vscode/.local/bin:/opt/venv/bin:$PATH"' \
         'export VIRTUAL_ENV=/opt/venv' \
         'export PIP_BREAK_SYSTEM_PACKAGES=1' \
