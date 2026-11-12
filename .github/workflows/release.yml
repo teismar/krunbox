@@ -1,9 +1,15 @@
 name: Release & Distribution Packages
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to release (e.g. v2.0.0)'
+        required: false
+        default: 'v2.0.0'
 
 jobs:
   build-python:
@@ -38,7 +44,7 @@ jobs:
             dist/*.tar.gz
 
       - name: Publish to PyPI
-        if: github.event_name == 'release'
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
@@ -69,10 +75,10 @@ jobs:
           path: dist/*.deb
 
   build-rpm:
-    name: Build RPM Package (Fedora / RHEL)
+    name: Build RPM Package (Fedora 45 / RHEL)
     runs-on: ubuntu-latest
     container:
-      image: fedora:41
+      image: fedora:45
 
     steps:
       - name: Check out repository
@@ -97,23 +103,43 @@ jobs:
           path: dist/*.rpm
 
   github-release:
-    name: Attach Assets to GitHub Release
+    name: Create GitHub Release & Attach Assets
     needs: [build-python, build-deb, build-rpm]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
     permissions:
       contents: write
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Determine release version tag
+        id: version
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Extract Changelog for Release
+        id: changelog
+        run: |
+          python3 packaging/extract-changelog.py "${{ steps.version.outputs.tag }}" --output RELEASE_NOTES.md
+          echo "=== Release Notes for ${{ steps.version.outputs.tag }} ==="
+          cat RELEASE_NOTES.md
+
       - name: Download all package artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-assets
           merge-multiple: true
 
-      - name: Upload assets to GitHub Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: false
           files: |
             release-assets/*.deb
             release-assets/*.rpm

@@ -11,7 +11,7 @@ DIST_DIR="${REPO_DIR}/dist"
 mkdir -p "${DIST_DIR}"
 
 # Check if rpmbuild is available locally.
-# If not, and docker/podman is available, dispatch into a fedora:41 container.
+# If not, and docker/podman is available, dispatch into a fedora:45 container.
 if ! command -v rpmbuild >/dev/null 2>&1; then
     CONTAINER_RUNTIME=""
     if command -v docker >/dev/null 2>&1; then
@@ -27,7 +27,7 @@ if ! command -v rpmbuild >/dev/null 2>&1; then
             -w /workspace \
             -e "HOST_UID=$(id -u)" \
             -e "HOST_GID=$(id -g)" \
-            fedora:41 \
+            fedora:45 \
             bash -c "
                 set -euo pipefail
                 dnf install -y --setopt=install_weak_deps=False \
