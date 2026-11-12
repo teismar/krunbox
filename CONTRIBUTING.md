@@ -56,4 +56,4 @@ make ui          # Launch the GTK4 desktop GUI locally
 
 3. **Pull Request Workflow**:
    - Keep commits focused and well-scoped using conventional commit prefixes (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
-   - Ensure all 298 tests pass locally before submitting.
+   - Ensure the full test suite passes locally before submitting.

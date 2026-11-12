@@ -6,8 +6,8 @@
 [![Hypervisor: Linux_KVM](https://img.shields.io/badge/Hypervisor-Linux_KVM-E95420?logo=linux&logoColor=white)](https://www.linux-kvm.org)
 [![Engine: crun--krun](https://img.shields.io/badge/Engine-crun--krun-3584e4)](https://github.com/containers/crun)
 [![UI: GTK4_/_Libadwaita](https://img.shields.io/badge/UI-GTK4_%2F_Libadwaita-3584e4?logo=gnome&logoColor=white)](https://gnome.pages.gitlab.gnome.org/libadwaita/)
-[![Tests: 298_passed](https://img.shields.io/badge/Tests-298_passed-2ec27e?logo=pytest&logoColor=white)](tests/)
-[![AI-DECLARATION: pair](https://img.shields.io/badge/AI--DECLARATION-pair-blue)](AI-DECLARATION.md)
+[![Tests](https://img.shields.io/github/actions/workflow/status/krunbox/krunbox/ci.yml?branch=main&label=Tests&logo=pytest&logoColor=white)](https://github.com/krunbox/krunbox/actions/workflows/ci.yml)
+[![AI-DECLARATION: pair](https://img.shields.io/badge/䷼%20AI--DECLARATION-pair-ffedd5?labelColor=ffedd5)](https://ai-declaration.md)
 
 **krunbox** gives you fast, hardware-isolated Linux microVM sandboxes for running AI coding agents, untrusted scripts, and messy development workloads without putting your host machine at risk.
 
