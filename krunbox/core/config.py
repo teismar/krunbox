@@ -37,7 +37,7 @@ BUILTIN_IMAGES: Dict[str, dict] = {
         "description": "Standard AI Agent (Ubuntu 24.04, DinD, Antigravity, Vibe, Chrome CDP)",
         "default": True,
         "runtime": "krun",
-        "containerfile": "Containerfile",
+        "containerfile": "images/agent-box/Containerfile",
     },
     "debian-minimal": {
         "tag": "localhost/krunbox-base:latest",

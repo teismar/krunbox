@@ -182,7 +182,7 @@ def test_image_manager_path_import():
         mock_proc.stderr = ""
         mock_run.return_value = mock_proc
 
-        ok, msg = img_mgr.build_agent_box("/workspace/Containerfile")
+        ok, msg = img_mgr.build_agent_box("/workspace/images/agent-box/Containerfile")
         assert ok is True
         assert "Successfully built" in msg
 

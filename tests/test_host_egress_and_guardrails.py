@@ -38,8 +38,8 @@ _WORKSPACE_ROOT = Path("/workspace") if Path("/workspace").exists() else Path(__
 
 def test_entrypoint_and_agent_session_bash_syntax():
     """Validate bash -n syntax check on entrypoint.sh and agent-session.sh."""
-    ep = str(_WORKSPACE_ROOT / "entrypoint.sh")
-    ag = str(_WORKSPACE_ROOT / "agent-session.sh")
+    ep = str(_WORKSPACE_ROOT / "images" / "agent-box" / "entrypoint.sh")
+    ag = str(_WORKSPACE_ROOT / "images" / "agent-box" / "agent-session.sh")
     res = subprocess.run(
         ["bash", "-n", ep, ag],
         capture_output=True,
@@ -51,7 +51,7 @@ def test_entrypoint_and_agent_session_bash_syntax():
 
 def test_entrypoint_contains_egress_lockdown_and_cap_drop():
     """Ensure entrypoint.sh restricts sudoers firewall commands and drops CAP_NET_ADMIN."""
-    content = (_WORKSPACE_ROOT / "entrypoint.sh").read_text(encoding="utf-8")
+    content = (_WORKSPACE_ROOT / "images" / "agent-box" / "entrypoint.sh").read_text(encoding="utf-8")
     assert 'KRUNBOX_LOCK_EGRESS' in content
     assert '/etc/sudoers.d/zz-krunbox-egress-lockdown' in content
     assert '!/usr/sbin/nft' in content

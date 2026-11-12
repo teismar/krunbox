@@ -123,7 +123,7 @@ class ImageManager:
         for root in candidate_roots:
             candidate = (root / rel_containerfile).resolve()
             if candidate.exists():
-                context = candidate.parent if key != "agent-box" else root.resolve()
+                context = candidate.parent
                 return candidate, context
 
         return None, None
@@ -516,7 +516,7 @@ class ImageManager:
         """Build the default localhost/agent-box:latest image."""
         cpath, cdir = self.find_spec_and_context("agent-box", explicit_path=containerfile_path)
         if not cpath or not cpath.exists():
-            return False, f"Agent-box Containerfile not found at {containerfile_path or 'Containerfile'}"
+            return False, f"Agent-box Containerfile not found at {containerfile_path or 'images/agent-box/Containerfile'}"
         return self._run_podman_build("localhost/agent-box:latest", cpath, cdir, on_progress=on_progress)
 
     def build_image(

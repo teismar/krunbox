@@ -77,7 +77,7 @@ Many developer environments need `sudo` (e.g. for installing system libraries or
 
 krunbox solves this with **host-boundary egress lockdown**:
 - Packet filtering is attached at the host network namespace level (`pasta --no-map-gw`).
-- Inside the guest microVM, `CAP_NET_ADMIN` is dropped via `setpriv --bounding-set=-net_admin` in `entrypoint.sh`.
+- Inside the guest microVM, `CAP_NET_ADMIN` is dropped via `setpriv --bounding-set=-net_admin` in `images/agent-box/entrypoint.sh`.
 - Even with root inside the microVM, the guest cannot modify the network filters enforced on the outside.
 
 ---
