@@ -25,7 +25,6 @@
     <name>Krunbox Development Team</name>
   </developer>
   <launchable type="desktop-id">io.krunbox.Krunbox.desktop</launchable>
-  <icon type="stock">io.krunbox.Krunbox</icon>
   <categories>
     <category>Development</category>
   </categories>

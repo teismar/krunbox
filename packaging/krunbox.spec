@@ -5,7 +5,7 @@ Summary:        Podman & microVM Sandboxing Engine with GTK4 Console
 
 License:        MIT
 URL:            https://github.com/krunbox/krunbox
-Source0:        %{pypi_source}
+Source0:        %{name}-%{version}.tar.gz
 
 BuildArch:      noarch
 
@@ -72,8 +72,13 @@ appstream-util validate-relax --nonet %{buildroot}%{_metainfodir}/io.krunbox.Kru
 %{_bindir}/krunbox
 %{_bindir}/krunbox-ui
 %{python3_sitelib}/krunbox/
-%{python3_sitelib}/krunbox-%{version}-py%{python3_version}.egg-info/
+%{python3_sitelib}/krunbox-%{version}*.*-info/
 %{_datadir}/applications/io.krunbox.Krunbox.desktop
 %{_metainfodir}/io.krunbox.Krunbox.metainfo.xml
 %{_datadir}/bash-completion/completions/krunbox
-%{_datadir}/icons/hicolor/*/apps/io.krunbox.Krunbox.*
+%{_datadir}/icons/hicolor/*/apps/io.krunbox.Krunbox*
+
+%changelog
+* Thu Nov 12 2026 Tim Eismar <eismartim@gmail.com> - 2.0.0-1
+- Initial 2.0.0 release of krunbox
+

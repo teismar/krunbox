@@ -1,0 +1,29 @@
+name: Feature Request
+description: Propose a new feature, enhancement, or capability for krunbox
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea or enhancement for krunbox? Describe the proposal and use cases below.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Motivation
+      description: What challenge or workflow need does this feature address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: How should this feature work in the CLI, GTK4 UI, or IPC gateway?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Considered Alternatives
+      description: Any alternative solutions or workarounds you have considered.
+    validations:
+      required: false

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <g fill="#3584e4">
+    <!-- Outer MicroVM Chassis Container -->
+    <path d="
+      M 32 14
+      L 96 14
+      A 18 18 0 0 1 114 32
+      L 114 96
+      A 18 18 0 0 1 96 114
+      L 32 114
+      A 18 18 0 0 1 14 96
+      L 14 32
+      A 18 18 0 0 1 32 14 Z
+      M 32 23
+      A 9 9 0 0 0 23 32
+      L 23 96
+      A 9 9 0 0 0 32 105
+      L 96 105
+      A 9 9 0 0 0 105 96
+      L 105 32
+      A 9 9 0 0 0 96 23
+      L 32 23 Z
+    "/>
+
+    <!-- Top Hardware Status Notch -->
+    <rect x="30" y="29" width="68" height="7" rx="3.5"/>
+
+    <!-- Central Krunbox K Monogram -->
+    <!-- Vertical Pillar -->
+    <rect x="35" y="44" width="14" height="54" rx="4"/>
+
+    <!-- Unified Chevron Arm (K Diagonals meet seamlessly with zero gap) -->
+    <path d="
+      M 77 45
+      L 89 45
+      A 3 3 0 0 1 91.5 48.5
+      L 71 71
+      L 91.5 93.5
+      A 3 3 0 0 1 89 97
+      L 77 97
+      A 3 3 0 0 1 74.8 96
+      L 54 73.5
+      A 3.5 3.5 0 0 1 54 68.5
+      L 74.8 46
+      A 3 3 0 0 1 77 45 Z
+    "/>
+  </g>
+</svg>

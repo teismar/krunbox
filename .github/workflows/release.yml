@@ -1,0 +1,121 @@
+name: Release & Distribution Packages
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-python:
+    name: Build Python Packages
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Upload Python artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-packages
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+
+      - name: Publish to PyPI
+        if: github.event_name == 'release'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+  build-deb:
+    name: Build DEB Package (Ubuntu / Debian)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install packaging dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev
+
+      - name: Build Debian package
+        run: ./packaging/build-deb.sh
+
+      - name: Validate Debian package
+        run: dpkg-deb -I dist/*.deb
+
+      - name: Upload DEB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-package
+          path: dist/*.deb
+
+  build-rpm:
+    name: Build RPM Package (Fedora / RHEL)
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:41
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install RPM build tools and dependencies
+        run: |
+          dnf install -y --setopt=install_weak_deps=False \
+            rpm-build python3-devel python3-setuptools python3-wheel \
+            desktop-file-utils libappstream-glib python3-pip python3-build git
+
+      - name: Mark workspace safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Build RPM package
+        run: ./packaging/build-rpm.sh
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-package
+          path: dist/*.rpm
+
+  github-release:
+    name: Attach Assets to GitHub Release
+    needs: [build-python, build-deb, build-rpm]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Upload assets to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/*.deb
+            release-assets/*.rpm
+            release-assets/*.tar.gz
+            release-assets/*.whl

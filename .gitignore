@@ -51,7 +51,6 @@ icon-theme.cache
 *.log
 *.sock
 *.pid
-git-graph.html
 
 # Local runner scripts and development wrappers (untracked)
 bin/
