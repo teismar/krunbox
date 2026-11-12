@@ -615,7 +615,7 @@ class KrunboxWindow(Adw.ApplicationWindow):
             developer_name="Krunbox Development Team",
             version="2.0.0",
             copyright="© 2026 Krunbox Authors",
-            license_type=Gtk.License.MIT_X11,
+            license_type=Gtk.License.APACHE_2_0,
             website="https://github.com/teismar/krunbox",
             issue_url="https://github.com/teismar/krunbox/issues",
             comments=(

@@ -3,7 +3,7 @@ Version:        2.0.0
 Release:        1%{?dist}
 Summary:        Podman & microVM Sandboxing Engine with GTK4 Console
 
-License:        MIT
+License:        Apache-2.0
 URL:            https://github.com/krunbox/krunbox
 Source0:        %{name}-%{version}.tar.gz
 

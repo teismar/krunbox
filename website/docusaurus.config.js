@@ -119,7 +119,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Copyright \u00a9 ${new Date().getFullYear()} krunbox contributors. Licensed under MIT.`,
+        copyright: `Copyright \u00a9 ${new Date().getFullYear()} krunbox contributors. Licensed under Apache-2.0.`,
       },
       prism: {
         theme: prismThemes.github,

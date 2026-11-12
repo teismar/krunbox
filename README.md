@@ -1,12 +1,12 @@
 # krunbox
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Platform: Linux](https://img.shields.io/badge/Platform-Linux-FCC624?logo=linux&logoColor=black)](https://kernel.org)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![Hypervisor: Linux_KVM](https://img.shields.io/badge/Hypervisor-Linux_KVM-E95420?logo=linux&logoColor=white)](https://www.linux-kvm.org)
 [![Engine: crun--krun](https://img.shields.io/badge/Engine-crun--krun-3584e4)](https://github.com/containers/crun)
 [![UI: GTK4_/_Libadwaita](https://img.shields.io/badge/UI-GTK4_%2F_Libadwaita-3584e4?logo=gnome&logoColor=white)](https://gnome.pages.gitlab.gnome.org/libadwaita/)
-[![Tests](https://img.shields.io/github/actions/workflow/status/krunbox/krunbox/ci.yml?branch=main&label=Tests&logo=pytest&logoColor=white)](https://github.com/krunbox/krunbox/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/teismar/krunbox/ci.yml?branch=main&label=Tests&logo=pytest&logoColor=white)](https://github.com/teismar/krunbox/actions/workflows/ci.yml)
 [![AI-DECLARATION: pair](https://img.shields.io/badge/䷼%20AI--DECLARATION-pair-ffedd5?labelColor=ffedd5)](https://ai-declaration.md)
 
 **krunbox** gives you fast, hardware-isolated Linux microVM sandboxes for running AI coding agents, untrusted scripts, and messy development workloads without putting your host machine at risk.
@@ -224,4 +224,4 @@ Contributions are warmly welcome! Whether you want to add new base images, impro
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for details.
