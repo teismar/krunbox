@@ -26,10 +26,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/krunbox/krunbox"
-Documentation = "https://github.com/krunbox/krunbox#readme"
-Repository = "https://github.com/krunbox/krunbox.git"
-Issues = "https://github.com/krunbox/krunbox/issues"
+Homepage = "https://github.com/teismar/krunbox"
+Documentation = "https://github.com/teismar/krunbox#readme"
+Repository = "https://github.com/teismar/krunbox.git"
+Issues = "https://github.com/teismar/krunbox/issues"
 
 [project.scripts]
 krunbox = "krunbox.cli.main:main"

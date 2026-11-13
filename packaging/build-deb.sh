@@ -100,7 +100,7 @@ Installed-Size: ${INSTALLED_SIZE}
 Maintainer: teismar <eismartim@gmail.com>
 Depends: python3 (>= 3.10), python3-rich (>= 13.0.0), python3-gi, gir1.2-gtk-4.0, gir1.2-adw-1, podman (>= 4.9.0), crun | crun-krun, passt, openssh-client
 Recommends: ptyxis | gnome-terminal | xdg-terminal-exec
-Homepage: https://github.com/krunbox/krunbox
+Homepage: https://github.com/teismar/krunbox
 Description: Podman & microVM Sandboxing Engine with GTK4 Console
  krunbox runs AI coding agents and development environments inside lightweight,
  hardware-isolated microVMs on Linux. It combines crun-krun and rootless Podman

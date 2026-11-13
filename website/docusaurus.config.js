@@ -66,7 +66,7 @@ const config = {
             label: 'Documentation',
           },
           {
-            href: 'https://github.com/krunbox/krunbox',
+            href: 'https://github.com/teismar/krunbox',
             label: 'GitHub',
             position: 'right',
           },
@@ -110,11 +110,11 @@ const config = {
             items: [
               {
                 label: 'GitHub Repository',
-                href: 'https://github.com/krunbox/krunbox',
+                href: 'https://github.com/teismar/krunbox',
               },
               {
                 label: 'Issue Tracker',
-                href: 'https://github.com/krunbox/krunbox/issues',
+                href: 'https://github.com/teismar/krunbox/issues',
               },
             ],
           },

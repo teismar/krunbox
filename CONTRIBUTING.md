@@ -18,7 +18,7 @@ krunbox runs microVMs via `crun-krun`, Linux KVM, and rootless Podman with a nat
 Clone the repository and install development dependencies via `make`:
 
 ```bash
-git clone https://github.com/krunbox/krunbox.git
+git clone https://github.com/teismar/krunbox.git
 cd krunbox
 make install
 ```
