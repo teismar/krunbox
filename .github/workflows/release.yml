@@ -20,10 +20,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -36,7 +36,7 @@ jobs:
         run: python -m build
 
       - name: Upload Python artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: python-packages
           path: |
@@ -55,7 +55,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install packaging dependencies
         run: |
@@ -69,7 +69,7 @@ jobs:
         run: dpkg-deb -I dist/*.deb
 
       - name: Upload DEB artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: deb-package
           path: dist/*.deb
@@ -82,7 +82,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install RPM build tools and dependencies
         run: |
@@ -97,7 +97,7 @@ jobs:
         run: ./packaging/build-rpm.sh
 
       - name: Upload RPM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: rpm-package
           path: dist/*.rpm
@@ -111,7 +111,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Determine release version tag
         id: version
@@ -127,7 +127,7 @@ jobs:
           cat RELEASE_NOTES.md
 
       - name: Download all package artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: release-assets
           merge-multiple: true
