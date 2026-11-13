@@ -74,9 +74,13 @@ def test_entrypoint_preserves_existing_mcp_servers(tmp_path):
     MUST preserve their custom servers while ensuring krunbox-gateway is added.
     """
     fake_home = tmp_path / "home" / "vscode"
+    fake_ipc = tmp_path / "run" / "krunbox"
     cfg_dir = fake_home / ".gemini" / "config"
     cfg_dir.mkdir(parents=True)
     cfg_file = cfg_dir / "mcp_config.json"
+    fake_ipc.mkdir(parents=True)
+    (fake_ipc / "krunbox-mcp").write_text("#!/bin/sh\nexit 0\n")
+    (fake_ipc / "krunbox-mcp").chmod(0o755)
 
     initial_config = {
         "mcpServers": {
@@ -88,14 +92,18 @@ def test_entrypoint_preserves_existing_mcp_servers(tmp_path):
     }
     cfg_file.write_text(json.dumps(initial_config, indent=2))
 
-    block = "\n".join(_mcp_config_shell_block()).replace("/home/vscode", str(fake_home))
+    block = (
+        "\n".join(_mcp_config_shell_block())
+        .replace("/home/vscode", str(fake_home))
+        .replace("/run/krunbox", str(fake_ipc))
+    )
     res = subprocess.run(["bash", "-c", block], capture_output=True, text=True)
-    assert res.returncode == 0
+    assert res.returncode == 0, res.stderr
 
     merged = json.loads(cfg_file.read_text(encoding="utf-8"))
     assert "my-custom-tool" in merged["mcpServers"]
     assert "krunbox-gateway" in merged["mcpServers"]
-    assert merged["mcpServers"]["krunbox-gateway"]["command"] == "/run/krunbox/krunbox-mcp"
+    assert merged["mcpServers"]["krunbox-gateway"]["command"] == f"{fake_ipc}/krunbox-mcp"
 
 
 def test_posix_fallback_when_python_unavailable(tmp_path):
@@ -104,10 +112,18 @@ def test_posix_fallback_when_python_unavailable(tmp_path):
     the POSIX shell fallback creates ~/.gemini/config/mcp_config.json.
     """
     fake_home = tmp_path / "home" / "vscode"
+    fake_ipc = tmp_path / "run" / "krunbox"
     fake_home.mkdir(parents=True)
+    fake_ipc.mkdir(parents=True)
+    (fake_ipc / "krunbox-mcp").write_text("#!/bin/sh\nexit 0\n")
+    (fake_ipc / "krunbox-mcp").chmod(0o755)
 
     # Execute with python3 masked out in PATH
-    block = "\n".join(_mcp_config_shell_block()).replace("/home/vscode", str(fake_home))
+    block = (
+        "\n".join(_mcp_config_shell_block())
+        .replace("/home/vscode", str(fake_home))
+        .replace("/run/krunbox", str(fake_ipc))
+    )
     fake_bin = tmp_path / "empty_bin"
     fake_bin.mkdir()
 
@@ -128,4 +144,4 @@ command() {{
     assert cfg_file.is_file()
     data = json.loads(cfg_file.read_text(encoding="utf-8"))
     assert "krunbox-gateway" in data["mcpServers"]
-    assert data["mcpServers"]["krunbox-gateway"]["command"] == "/run/krunbox/krunbox-mcp"
+    assert data["mcpServers"]["krunbox-gateway"]["command"] == f"{fake_ipc}/krunbox-mcp"

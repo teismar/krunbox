@@ -24,7 +24,7 @@ def test_extract_changelog_v2(tmp_path):
         encoding="utf-8",
     )
 
-    script = Path("/workspace/packaging/extract-changelog.py")
+    script = Path(__file__).resolve().parents[1] / "packaging" / "extract-changelog.py"
     res = subprocess.run(
         [sys.executable, str(script), "v2.0.0", "--changelog", str(changelog)],
         capture_output=True,
@@ -53,7 +53,7 @@ def test_extract_changelog_v1(tmp_path):
         encoding="utf-8",
     )
 
-    script = Path("/workspace/packaging/extract-changelog.py")
+    script = Path(__file__).resolve().parents[1] / "packaging" / "extract-changelog.py"
     res = subprocess.run(
         [sys.executable, str(script), "1.0.0", "--changelog", str(changelog)],
         capture_output=True,
@@ -74,7 +74,7 @@ Release highlights here.
         encoding="utf-8",
     )
     out_file = tmp_path / "RELEASE_NOTES.md"
-    script = Path("/workspace/packaging/extract-changelog.py")
+    script = Path(__file__).resolve().parents[1] / "packaging" / "extract-changelog.py"
     subprocess.run(
         [sys.executable, str(script), "v2.0.0", "--changelog", str(changelog), "--output", str(out_file)],
         check=True,
@@ -86,7 +86,7 @@ Release highlights here.
 def test_extract_changelog_fallback(tmp_path):
     changelog = tmp_path / "CHANGELOG.md"
     changelog.write_text("## [1.0.0]\nSome notes", encoding="utf-8")
-    script = Path("/workspace/packaging/extract-changelog.py")
+    script = Path(__file__).resolve().parents[1] / "packaging" / "extract-changelog.py"
     res = subprocess.run(
         [sys.executable, str(script), "v9.9.9", "--changelog", str(changelog)],
         capture_output=True,

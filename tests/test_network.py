@@ -202,6 +202,10 @@ def test_mcp_config_shell_block_execution(tmp_path):
     fake_home.mkdir(parents=True)
     fake_ws = tmp_path / "workspace"
     fake_ws.mkdir(parents=True)
+    fake_ipc = tmp_path / "run" / "krunbox"
+    fake_ipc.mkdir(parents=True)
+    (fake_ipc / "krunbox-mcp").write_text("#!/bin/sh\nexit 0\n")
+    (fake_ipc / "krunbox-mcp").chmod(0o755)
 
     block_lines = _mcp_config_shell_block()
     script_body = "\n".join(block_lines)
@@ -211,6 +215,7 @@ def test_mcp_config_shell_block_execution(tmp_path):
         script_body
         .replace("/home/vscode", str(fake_home))
         .replace("/workspace", str(fake_ws))
+        .replace("/run/krunbox", str(fake_ipc))
     )
 
     runner = f"""#!/bin/bash
@@ -226,11 +231,11 @@ set -e
     data = json.loads(gemini_cfg.read_text(encoding="utf-8"))
     assert "mcpServers" in data
     assert "krunbox-gateway" in data["mcpServers"]
-    assert data["mcpServers"]["krunbox-gateway"]["command"] == "/run/krunbox/krunbox-mcp"
+    assert data["mcpServers"]["krunbox-gateway"]["command"] == f"{fake_ipc}/krunbox-mcp"
 
     # Verify workspace config /workspace/.agents/mcp_config.json
     ws_cfg = fake_ws / ".agents" / "mcp_config.json"
     assert ws_cfg.is_file(), f"Expected {ws_cfg} to exist"
     ws_data = json.loads(ws_cfg.read_text(encoding="utf-8"))
-    assert ws_data["mcpServers"]["krunbox-gateway"]["command"] == "/run/krunbox/krunbox-mcp"
+    assert ws_data["mcpServers"]["krunbox-gateway"]["command"] == f"{fake_ipc}/krunbox-mcp"
 
