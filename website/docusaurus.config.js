@@ -7,7 +7,7 @@ const config = {
   tagline: 'Fast, lightweight Linux microVM sandboxes for AI agents and messy code',
   favicon: 'img/logo.svg',
 
-  url: 'https://krunbox.github.io',
+  url: 'https://teismar.github.io',
   baseUrl: '/krunbox/',
 
   organizationName: 'krunbox',
